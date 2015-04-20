@@ -73,14 +73,15 @@ namespace gr {
                        gr_vector_const_void_star &input_items,
                        gr_vector_void_star &output_items)
     {
-        // const float *in = (const float *) input_items[0];
-        // float *out      = (float *)       output_items[0];
-
-        jl_value_t *array_type = jl_apply_array_type(jl_float32_type, 1);
-        jl_array_t *x          = jl_ptr_to_array_1d(array_type, (void *) input_items[0], noutput_items, 0); 
-        jl_array_t *y          = jl_ptr_to_array_1d(array_type, (void *) output_items[0], noutput_items, 0);
+        static jl_value_t *array_type = NULL; // only initialize array type once
+        if (!array_type) array_type = jl_apply_array_type(jl_float32_type, 1);
         
+        jl_array_t *x = NULL, *y = NULL;
+        JL_GC_PUSH2(&x, &y);
+        x = jl_ptr_to_array_1d(array_type, (void *) input_items[0], noutput_items, 0); 
+        y = jl_ptr_to_array_1d(array_type, (void *) output_items[0], noutput_items, 0);
         jl_call2(julia_work_function, (jl_value_t*) y, (jl_value_t*) x);
+        JL_GC_POP();
 
         // Tell runtime system how many input items we consumed on
         // each input stream.
